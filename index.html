@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NFL Season Predictions — Single‑File App</title>
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --card: #121829;
+      --muted: #8a93a5;
+      --text: #e8ecf3;
+      --accent: #48c78e;
+      --accent-2: #5ab0f5;
+      --danger: #ff6b6b;
+      --warning: #ffb020;
+      --ring: rgba(90,176,245,0.4);
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      color: var(--text);
+      background: radial-gradient(1200px 1200px at 90% -10%, #1b2440 0%, #0b0f19 60%);
+    }
+    a { color: var(--accent-2); text-decoration: none; }
+    header {
+      padding: 20px clamp(16px, 4vw, 40px);
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 16px;
+      align-items: center;
+      position: sticky; top: 0; z-index: 20;
+      background: linear-gradient(180deg, rgba(11,15,25,0.9), rgba(11,15,25,0.65) 60%, rgba(11,15,25,0));
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .title {
+      font-size: clamp(20px, 2.2vw, 28px);
+      letter-spacing: 0.3px;
+      font-weight: 700;
+      display: flex; align-items: baseline; gap: 10px;
+    }
+    .title .year {
+      color: var(--muted);
+      font-weight: 500;
+    }
+    .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn {
+      background: #1a2137; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 10px 14px; border-radius: 12px; font-weight: 600;
+      cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, border .2s ease;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(0,0,0,0.25); border-color: rgba(90,176,245,0.35); }
+    .btn.accent { background: linear-gradient(180deg, #66d69f, #38b27a); color: #0b111b; border: none; }
+    .btn.warn { background: #2a2330; border-color: rgba(255,176,32,0.4); color: #ffd38a; }
+    .btn.danger { background: #2a2023; border-color: rgba(255,107,107,0.4); color: #ffb5b5; }
+
+    main { padding: 20px clamp(16px, 4vw, 40px) 80px; display: grid; gap: 28px; }
+
+    .grid { display: grid; gap: 16px; }
+    .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 1100px) { .grid.cols-4 { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+    @media (max-width: 800px) { .grid.cols-3, .grid.cols-2 { grid-template-columns: 1fr; } }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px; padding: 16px 16px 14px; display: grid; gap: 12px; min-height: 0;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    .card h3 { margin: 0; font-size: 16px; letter-spacing: .4px; text-transform: uppercase; color: #b7c1d6; }
+    .sub { color: var(--muted); font-size: 12px; letter-spacing: .3px; }
+
+    .division-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+    .team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #11172a; border: 1px solid rgba(255,255,255,0.08); cursor: grab; user-select: none; }
+    .team.dragging { opacity: .6; border-style: dashed; }
+    .handle { width: 18px; opacity: .6; }
+    .rank-badge { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; background: #101524; border: 1px solid rgba(255,255,255,0.08); color: #9db5ff; }
+
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: #10172a; cursor: pointer; }
+    .chip.active { background: linear-gradient(180deg, rgba(90,176,245,0.18), rgba(90,176,245,0.08)); border-color: var(--ring); box-shadow: 0 0 0 3px var(--ring); }
+    .count { font-size: 12px; color: var(--muted); }
+
+    select, input[type="text"], input[type="number"], input[type="search"] {
+      width: 100%; padding: 10px 12px; border-radius: 10px; background: #0f1423; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.1);
+      outline: none; box-shadow: 0 0 0 0 var(--ring);
+      transition: box-shadow .2s ease, border .2s ease;
+    }
+    select:focus, input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px var(--ring); }
+
+    .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 800px) { .row { grid-template-columns: 1fr; } }
+
+    .footer-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 12px; }
+
+    .muted { color: var(--muted); }
+    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
+
+    .stack { display: grid; gap: 8px; }
+
+    .summary { line-height: 1.6; }
+    .summary h4 { margin: 12px 0 6px; font-size: 14px; color: #c5cede; text-transform: uppercase; letter-spacing: .4px; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { background: #0f1628; border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 999px; }
+
+    .divider { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04)); margin: 4px 0; }
+
+    .help { font-size: 12px; color: var(--muted); }
+
+    .hint {
+      font-size: 12px; color: #bcd6ff; background: rgba(90,176,245,0.08); border: 1px solid var(--ring);
+      padding: 8px 10px; border-radius: 10px;
+    }
+
+    /* Print styles */
+    @media print {
+      header, .no-print { display: none !important; }
+      body { background: white; color: #111; }
+      .card { border: none; box-shadow: none; background: white; }
+      .summary .tag { border: 1px solid #999; background: #fff; color: #111; }
+      .division-list .team { background: #fff; border: 1px solid #ccc; color: #111; }
+      .rank-badge { background: #eee; color: #000; border-color: #bbb; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">NFL Season Predictions <span class="year" id="yearLabel"></span></div>
+    <div class="row" style="align-items:center; max-width: 520px;">
+      <div>
+        <div class="label">Season Year</div>
+        <input id="seasonYear" type="number" min="1933" max="2099" step="1" />
+      </div>
+      <div>
+        <div class="label">Lock Editing</div>
+        <select id="lockToggle">
+          <option value="off">Unlocked</option>
+          <option value="on">Locked</option>
+        </select>
+      </div>
+    </div>
+    <div class="actions no-print">
+      <button class="btn accent" id="saveBtn">Save</button>
+      <button class="btn" id="exportBtn" title="Download a JSON file of your picks">Export JSON</button>
+      <label class="btn" for="importFile" title="Load previously saved JSON">Import JSON</label>
+      <input id="importFile" type="file" accept="application/json" hidden />
+      <button class="btn" id="shareBtn" title="Create a link with your picks embedded">Share Link</button>
+      <button class="btn" id="printBtn">Print</button>
+      <button class="btn warn" id="resetBtn">Reset</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="grid cols-2">
+      <div class="card">
+        <h3>AFC Divisions</h3>
+        <div class="sub">Drag to rank 1–4 for each division.</div>
+        <div class="grid cols-2" id="afcDivisions"></div>
+      </div>
+      <div class="card">
+        <h3>NFC Divisions</h3>
+        <div class="sub">Drag to rank 1–4 for each division.</div>
+        <div class="grid cols-2" id="nfcDivisions"></div>
+      </div>
+    </section>
+
+    <section class="grid cols-2">
+      <div class="card">
+        <h3>AFC Playoff Teams (7)</h3>
+        <div class="sub">Toggle exactly seven teams. Order doesn't matter.</div>
+        <div class="chips" id="afcPlayoffChips"></div>
+        <div class="count" id="afcCount"></div>
+      </div>
+      <div class="card">
+        <h3>NFC Playoff Teams (7)</h3>
+        <div class="sub">Toggle exactly seven teams. Order doesn't matter.</div>
+        <div class="chips" id="nfcPlayoffChips"></div>
+        <div class="count" id="nfcCount"></div>
+      </div>
+    </section>
+
+    <section class="grid cols-3">
+      <div class="card">
+        <h3>Conference Champs</h3>
+        <div class="stack">
+          <label class="label" for="afcChamp">AFC Champion</label>
+          <select id="afcChamp"><option value="">— select 7 playoff teams first —</option></select>
+        </div>
+        <div class="stack">
+          <label class="label" for="nfcChamp">NFC Champion</label>
+          <select id="nfcChamp"><option value="">— select 7 playoff teams first —</option></select>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Super Bowl</h3>
+        <div class="stack">
+          <div class="label">Matchup</div>
+          <div id="sbMatchup" class="hint">Choose AFC & NFC champs to see the matchup.</div>
+        </div>
+        <div class="stack">
+          <label class="label" for="sbWinner">Winner</label>
+          <select id="sbWinner"><option value="">— select champs first —</option></select>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Awards</h3>
+        <label class="label" for="mvpInput">NFL MVP</label>
+        <input id="mvpInput" type="search" list="mvpList" placeholder="Start typing a player…" />
+        <datalist id="mvpList"></datalist>
+      </div>
+    </section>
+
+    <section class="card summary" id="summary">
+      <h3>Your Summary</h3>
+      <div id="summaryContent"></div>
+      <div class="footer-note">Tip: Use <strong>Export JSON</strong> to download your picks, <strong>Share Link</strong> to generate a link, or hit <strong>Print</strong> to save as PDF.</div>
+    </section>
+  </main>
+
+  <script>
+    // --- Data ---
+    const TEAMS = {
+      "AFC East": ["Buffalo Bills","Miami Dolphins","New York Jets","New England Patriots"],
+      "AFC North": ["Baltimore Ravens","Cincinnati Bengals","Cleveland Browns","Pittsburgh Steelers"],
+      "AFC South": ["Houston Texans","Indianapolis Colts","Jacksonville Jaguars","Tennessee Titans"],
+      "AFC West": ["Denver Broncos","Kansas City Chiefs","Las Vegas Raiders","Los Angeles Chargers"],
+      "NFC East": ["Dallas Cowboys","New York Giants","Philadelphia Eagles","Washington Commanders"],
+      "NFC North": ["Chicago Bears","Detroit Lions","Green Bay Packers","Minnesota Vikings"],
+      "NFC South": ["Atlanta Falcons","Carolina Panthers","New Orleans Saints","Tampa Bay Buccaneers"],
+      "NFC West": ["Arizona Cardinals","Los Angeles Rams","San Francisco 49ers","Seattle Seahawks"]
+    };
+
+    const MVP_SUGGESTIONS = [
+      "Patrick Mahomes","Josh Allen","Joe Burrow","Lamar Jackson","Justin Herbert","C.J. Stroud","Jalen Hurts","Dak Prescott","Aaron Rodgers","Brock Purdy","Tua Tagovailoa","Trevor Lawrence","Jordan Love","Kirk Cousins","Caleb Williams","Jared Goff","Bijan Robinson","Christian McCaffrey","Micah Parsons","Tyreek Hill"
+    ];
+
+    const state = {
+      seasonYear: new Date().getFullYear(),
+      divisions: {}, // will be copied from TEAMS
+      playoffs: { AFC: [], NFC: [] },
+      champs: { AFC: "", NFC: "" },
+      superBowlWinner: "",
+      mvp: ""
+    };
+
+    // --- Helpers ---
+    const qs = (sel, el=document) => el.querySelector(sel);
+    const qsa = (sel, el=document) => [...el.querySelectorAll(sel)];
+
+    function deepClone(obj){ return JSON.parse(JSON.stringify(obj)); }
+
+    function resetState(){
+      state.seasonYear = new Date().getFullYear();
+      state.divisions = deepClone(TEAMS);
+      state.playoffs = { AFC: [], NFC: [] };
+      state.champs = { AFC: "", NFC: "" };
+      state.superBowlWinner = "";
+      state.mvp = "";
+    }
+
+    // --- Render Division Cards with Drag & Drop ---
+    function createDivisionCard(name){
+      const card = document.createElement('div');
+      card.className = 'card';
+      const h = document.createElement('h3'); h.textContent = name; card.appendChild(h);
+      const ul = document.createElement('ul'); ul.className = 'division-list'; ul.dataset.division = name;
+      card.appendChild(ul);
+      renderDivisionList(ul, state.divisions[name]);
+      return card;
+    }
+
+    function renderDivisionList(ul, teams){
+      ul.innerHTML = '';
+      teams.forEach((team, idx) => {
+        const li = document.createElement('li');
+        li.className = 'team';
+        li.draggable = true;
+        li.dataset.index = idx;
+        li.innerHTML = `
+          <span class="rank-badge">${idx+1}</span>
+          <span>${team}</span>
+          <svg class="handle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 9h8M8 15h8"/></svg>
+        `;
+        li.addEventListener('dragstart', e => {
+          li.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', idx);
+        });
+        li.addEventListener('dragend', () => li.classList.remove('dragging'));
+        li.addEventListener('dragover', e => e.preventDefault());
+        li.addEventListener('drop', e => {
+          e.preventDefault();
+          const from = Number(e.dataTransfer.getData('text/plain'));
+          const to = Number(li.dataset.index);
+          reorderDivision(ul.dataset.division, from, to);
+        });
+        ul.appendChild(li);
+      });
+    }
+
+    function reorderDivision(division, from, to){
+      const arr = state.divisions[division];
+      const [moved] = arr.splice(from, 1);
+      arr.splice(to, 0, moved);
+      const container = document.querySelector(`[data-division="${division}"]`);
+      renderDivisionList(container, arr);
+      updateSummary();
+      autosave();
+    }
+
+    // --- Playoff chips ---
+    function renderPlayoffChips(conf){
+      const el = qs(conf === 'AFC' ? '#afcPlayoffChips' : '#nfcPlayoffChips');
+      el.innerHTML = '';
+      const divisions = Object.entries(state.divisions).filter(([name]) => name.startsWith(conf));
+      const teams = divisions.flatMap(([_, t]) => t);
+      teams.forEach(team => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip' + (state.playoffs[conf].includes(team) ? ' active' : '');
+        chip.textContent = team;
+        chip.addEventListener('click', () => togglePlayoffTeam(conf, team));
+        el.appendChild(chip);
+      });
+      updatePlayoffCounts();
+      refreshChampOptions();
+    }
+
+    function togglePlayoffTeam(conf, team){
+      const list = state.playoffs[conf];
+      const i = list.indexOf(team);
+      if(i >= 0){ list.splice(i,1); }
+      else {
+        if(list.length >= 7){
+          alert(conf + ' already has 7 teams. Remove one first.');
+          return;
+        }
+        list.push(team);
+      }
+      renderPlayoffChips(conf);
+      updateSummary();
+      autosave();
+    }
+
+    function updatePlayoffCounts(){
+      qs('#afcCount').textContent = `${state.playoffs.AFC.length}/7 selected`;
+      qs('#nfcCount').textContent = `${state.playoffs.NFC.length}/7 selected`;
+    }
+
+    // --- Champs / Super Bowl ---
+    function refreshChampOptions(){
+      const afcSel = qs('#afcChamp');
+      const nfcSel = qs('#nfcChamp');
+      const mkOpts = (sel, teams, selected) => {
+        const had = sel.value;
+        sel.innerHTML = '';
+        const ph = document.createElement('option');
+        ph.value=''; ph.textContent = teams.length === 7 ? '— select —' : '— select 7 playoff teams first —';
+        sel.appendChild(ph);
+        teams.forEach(t => {
+          const o = document.createElement('option'); o.value = t; o.textContent = t; sel.appendChild(o);
+        });
+        sel.value = teams.includes(selected) ? selected : '';
+      };
+      mkOpts(afcSel, state.playoffs.AFC, state.champs.AFC);
+      mkOpts(nfcSel, state.playoffs.NFC, state.champs.NFC);
+      updateSBMatchup();
+    }
+
+    function updateSBMatchup(){
+      const a = state.champs.AFC;
+      const n = state.champs.NFC;
+      const matchupEl = qs('#sbMatchup');
+      const sbSel = qs('#sbWinner');
+      sbSel.innerHTML = '';
+      if(a && n){
+        matchupEl.textContent = `${a} vs ${n}`;
+        const ph = document.createElement('option'); ph.value=''; ph.textContent='— pick winner —'; sbSel.appendChild(ph);
+        [a,n].forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sbSel.appendChild(o); });
+        sbSel.value = [a,n].includes(state.superBowlWinner) ? state.superBowlWinner : '';
+      } else {
+        matchupEl.textContent = 'Choose AFC & NFC champs to see the matchup.';
+        const ph = document.createElement('option'); ph.value=''; ph.textContent='— select champs first —'; sbSel.appendChild(ph);
+        sbSel.value = '';
+      }
+    }
+
+    // --- Summary ---
+    function summarize(){
+      const divBlock = Object.entries(state.divisions)
+        .sort((a,b)=> a[0].localeCompare(b[0]))
+        .map(([name, teams]) => {
+          return `<h4>${name}</h4><ol>${teams.map(t=>`<li>${t}</li>`).join('')}</ol>`;
+        }).join('');
+
+      const playBlock = (conf) => `
+        <h4>${conf} Playoff Teams</h4>
+        <div class="tags">${state.playoffs[conf].map(t=>`<span class="tag">${t}</span>`).join('') || '<span class="muted">(Select 7)</span>'}</div>`;
+
+      const champs = `
+        <h4>Champs & Super Bowl</h4>
+        <div class="stack">
+          <div><span class="label">AFC Champ</span><div>${state.champs.AFC || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">NFC Champ</span><div>${state.champs.NFC || '<span class="muted">—</span>'}</div></div>
+          <div class="divider"></div>
+          <div><span class="label">Super Bowl</span><div>${state.champs.AFC && state.champs.NFC ? `${state.champs.AFC} vs ${state.champs.NFC}` : '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Winner</span><div>${state.superBowlWinner || '<span class="muted">—</span>'}</div></div>
+        </div>`;
+
+      const awards = `
+        <h4>Awards</h4>
+        <div class="stack">
+          <div><span class="label">NFL MVP</span><div>${state.mvp || '<span class="muted">—</span>'}</div></div>
+        </div>`;
+
+      return divBlock + playBlock('AFC') + playBlock('NFC') + champs + awards;
+    }
+
+    function updateSummary(){
+      qs('#summaryContent').innerHTML = summarize();
+    }
+
+    // --- Persistence ---
+    const STORAGE_KEY = 'nfl_predictions_single_file_v1';
+    function autosave(){
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadFromStorage(){
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      try{
+        const data = JSON.parse(raw);
+        applyState(data);
+        return true;
+      }catch(e){ console.warn('Failed to parse saved data', e); return false; }
+    }
+
+    function exportJSON(){
+      const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
+      const a = document.createElement('a');
+      const d = new Date();
+      const name = `nfl_predictions_${state.seasonYear}_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
+      a.href = URL.createObjectURL(blob);
+      a.download = name; a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function importJSON(file){
+      const reader = new FileReader();
+      reader.onload = () => {
+        try{
+          const data = JSON.parse(reader.result);
+          applyState(data);
+          autosave();
+          alert('Imported!');
+        }catch(e){ alert('Invalid JSON.'); }
+      };
+      reader.readAsText(file);
+    }
+
+    function shareLink(){
+      const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
+      const url = location.origin + location.pathname + '#data=' + payload;
+      navigator.clipboard?.writeText(url).catch(()=>{});
+      alert('Share link copied to clipboard. Anyone with the link can view your picks.');
+    }
+
+    function loadFromHash(){
+      const hash = location.hash;
+      const m = hash.match(/#data=([^&]+)/);
+      if(!m) return false;
+      try{
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+        applyState(decoded);
+        return true;
+      }catch(e){ console.warn('Invalid hash data'); return false; }
+    }
+
+    function applyState(data){
+      // Defensive copy + fallbacks
+      state.seasonYear = Number(data.seasonYear) || new Date().getFullYear();
+      state.divisions = deepClone(TEAMS);
+      for(const k in data.divisions || {}){
+        if(state.divisions[k]){
+          const teams = data.divisions[k].filter(t => state.divisions[k].includes(t));
+          if(teams.length === 4) state.divisions[k] = teams;
+        }
+      }
+      state.playoffs = {
+        AFC: (data.playoffs?.AFC || []).filter(t => Object.keys(TEAMS).some(d=>d.startsWith('AFC') && TEAMS[d].includes(t))).slice(0,7),
+        NFC: (data.playoffs?.NFC || []).filter(t => Object.keys(TEAMS).some(d=>d.startsWith('NFC') && TEAMS[d].includes(t))).slice(0,7)
+      };
+      state.champs = {
+        AFC: state.playoffs.AFC.includes(data.champs?.AFC) ? data.champs.AFC : "",
+        NFC: state.playoffs.NFC.includes(data.champs?.NFC) ? data.champs.NFC : ""
+      };
+      state.superBowlWinner = [state.champs.AFC, state.champs.NFC].includes(data.superBowlWinner) ? data.superBowlWinner : "";
+      state.mvp = data.mvp || '';
+
+      // Re-render UI
+      qs('#seasonYear').value = state.seasonYear;
+      qs('#yearLabel').textContent = `• ${state.seasonYear}`;
+
+      const afcWrap = qs('#afcDivisions');
+      const nfcWrap = qs('#nfcDivisions');
+      afcWrap.innerHTML = ''; nfcWrap.innerHTML = '';
+      Object.keys(TEAMS).filter(k=>k.startsWith('AFC')).forEach(name => afcWrap.appendChild(createDivisionCard(name)));
+      Object.keys(TEAMS).filter(k=>k.startsWith('NFC')).forEach(name => nfcWrap.appendChild(createDivisionCard(name)));
+
+      renderPlayoffChips('AFC');
+      renderPlayoffChips('NFC');
+
+      refreshChampOptions();
+      updateSBMatchup();
+      updateSummary();
+    }
+
+    function setLocked(locked){
+      const interactive = qsa('button, input, select');
+      interactive.forEach(el => {
+        if(el.id === 'lockToggle') return; // keep lock control usable
+        if(el.closest('header .actions')) return; // action bar
+        el.disabled = locked;
+      });
+      qsa('.team').forEach(li => li.style.pointerEvents = locked ? 'none' : 'auto');
+    }
+
+    // --- Init ---
+    function init(){
+      resetState();
+      // Build MVP suggestions
+      const dl = qs('#mvpList');
+      MVP_SUGGESTIONS.forEach(p => { const o=document.createElement('option'); o.value=p; dl.appendChild(o); });
+
+      if(!loadFromHash()){
+        if(!loadFromStorage()){
+          applyState(state); // render defaults
+        }
+      }
+
+      // Hook up inputs
+      qs('#seasonYear').addEventListener('input', e => {
+        const y = Number(e.target.value);
+        if(y >= 1933 && y <= 2099){ state.seasonYear = y; qs('#yearLabel').textContent = `• ${y}`; autosave(); }
+      });
+
+      qs('#afcChamp').addEventListener('change', e => { state.champs.AFC = e.target.value; updateSBMatchup(); updateSummary(); autosave(); });
+      qs('#nfcChamp').addEventListener('change', e => { state.champs.NFC = e.target.value; updateSBMatchup(); updateSummary(); autosave(); });
+      qs('#sbWinner').addEventListener('change', e => { state.superBowlWinner = e.target.value; updateSummary(); autosave(); });
+      qs('#mvpInput').addEventListener('input', e => { state.mvp = e.target.value; updateSummary(); autosave(); });
+
+      // Actions
+      qs('#saveBtn').addEventListener('click', () => { autosave(); const ok = !!localStorage.getItem(STORAGE_KEY); alert(ok ? 'Saved to this browser.' : 'Could not save.'); });
+      qs('#exportBtn').addEventListener('click', exportJSON);
+      qs('#importFile').addEventListener('change', e => { const f = e.target.files?.[0]; if(f) importJSON(f); e.target.value = ''; });
+      qs('#shareBtn').addEventListener('click', shareLink);
+      qs('#printBtn').addEventListener('click', () => window.print());
+      qs('#resetBtn').addEventListener('click', () => { if(confirm('Reset everything?')) { resetState(); applyState(state); autosave(); } });
+
+      qs('#lockToggle').addEventListener('change', e => setLocked(e.target.value === 'on'));
+    }
+
+    init();
+  </script>
+</body>
+</html>
