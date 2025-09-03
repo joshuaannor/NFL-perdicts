@@ -6,10 +6,10 @@
   <title>NFL Season Predictions — Single‑File App</title>
   <style>
     :root {
-      --bg: #e8ecf7;
-      --card: #e8ecf7;
-      --muted: #666666;
-      --text: #333333;
+      --bg: #2e2e2e;
+      --card: #3a3a3a;
+      --muted: #aaaaaa;
+      --text: #e0e0e0;
       --accent: #5ab0f5;
       --accent-2: #4e81c9;
       --danger: #a0a0a0;
@@ -34,7 +34,7 @@
       gap: 16px;
       align-items: center;
       position: sticky; top: 0; z-index: 20;
-      background: linear-gradient(180deg, rgba(11,15,25,0.9), rgba(11,15,25,0.65) 60%, rgba(11,15,25,0));
+      background: linear-gradient(180deg, rgba(20,20,20,0.9), rgba(20,20,20,0.65) 60%, rgba(20,20,20,0));
       backdrop-filter: blur(6px);
       border-bottom: 1px solid rgba(255,255,255,0.06);
     }
@@ -50,7 +50,7 @@
     }
     .actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
     .btn {
-      background: #1a2137; color: var(--text);
+      background: #3a3a3a; color: var(--text);
       border: 1px solid rgba(255,255,255,0.08);
       padding: 10px 14px; border-radius: 12px; font-weight: 600;
       cursor: pointer; transition: transform .06s ease, box-shadow .2s ease, border .2s ease;
@@ -76,25 +76,26 @@
       box-shadow: 0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05);
     }
     .card h3 { margin: 0; font-size: 16px; letter-spacing: .4px; text-transform: uppercase; color: #b7c1d6; }
+    #superBowlCard h3 { text-transform: none; font-size: 18px; color: #ffffff; }
     .sub { color: var(--muted); font-size: 12px; letter-spacing: .3px; }
 
     .division-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
-    .team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #11172a; border: 1px solid rgba(255,255,255,0.08); cursor: grab; user-select: none; }
+    .team { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: #1f1f1f; border: 1px solid rgba(255,255,255,0.08); cursor: grab; user-select: none; }
     .team.dragging { opacity: .6; border-style: dashed; }
     .handle { width: 18px; opacity: .6; }
-    .rank-badge { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; background: #101524; border: 1px solid rgba(255,255,255,0.08); color: #9db5ff; }
+    .rank-badge { width: 28px; height: 28px; border-radius: 10px; display: grid; place-items: center; font-weight: 700; background: #2f2f2f; border: 1px solid rgba(255,255,255,0.08); color: #9db5ff; }
 
     .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-    .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: #10172a; cursor: pointer; color: var(--text); }
+    .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: #1f1f1f; cursor: pointer; color: var(--text); }
     .chip.active { background: linear-gradient(180deg, rgba(90,176,245,0.18), rgba(90,176,245,0.08)); border-color: var(--ring); box-shadow: 0 0 0 3px var(--ring); color: #fff; }
     .count { font-size: 12px; color: var(--muted); }
 
     .bracket { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-    .bracket li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: #11172a; border: 1px solid rgba(255,255,255,0.08); }
-    .bracket .seed { width: 22px; height: 22px; border-radius: 6px; background: #101524; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #9db5ff; }
+    .bracket li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: #1f1f1f; border: 1px solid rgba(255,255,255,0.08); }
+    .bracket .seed { width: 22px; height: 22px; border-radius: 6px; background: #2f2f2f; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #9db5ff; }
 
     select, input[type="text"], input[type="number"], input[type="search"] {
-      width: 100%; padding: 10px 12px; border-radius: 10px; background: #0f1423; color: var(--text);
+      width: 100%; padding: 10px 12px; border-radius: 10px; background: #1a1a1a; color: var(--text);
       border: 1px solid rgba(255,255,255,0.1);
       outline: none; box-shadow: 0 0 0 0 var(--ring);
       transition: box-shadow .2s ease, border .2s ease;
@@ -114,7 +115,7 @@
     .summary { line-height: 1.6; }
     .summary h4 { margin: 12px 0 6px; font-size: 14px; color: #c5cede; text-transform: uppercase; letter-spacing: .4px; }
     .tags { display: flex; flex-wrap: wrap; gap: 8px; }
-    .tag { background: #0f1628; border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 999px; color: var(--text); }
+    .tag { background: #1f1f1f; border: 1px solid rgba(255,255,255,0.08); padding: 6px 10px; border-radius: 999px; color: var(--text); }
 
     .divider { height: 1px; background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.12), rgba(255,255,255,0.04)); margin: 4px 0; }
 
@@ -214,13 +215,7 @@
     </div>
     <div class="actions no-print">
       <button class="btn accent" id="saveBtn">Save</button>
-      <button class="btn" id="exportBtn" title="Download a JSON file of your picks">Export JSON</button>
-      <label class="btn" for="importFile" title="Load previously saved JSON">Import JSON</label>
-      <input id="importFile" type="file" accept="application/json" hidden />
-      <button class="btn" id="shareBtn" title="Create a link with your picks embedded">Share Link</button>
       <button class="btn" id="summaryTabBtn" title="Open summary in a new tab">Summary Tab</button>
-      <button class="btn" id="summaryBtn" title="Print only the summary">Summary PDF</button>
-      <button class="btn" id="printBtn">Print</button>
       <button class="btn warn" id="resetBtn">Reset</button>
     </div>
   </header>
@@ -266,7 +261,7 @@
           <select id="nfcChamp"><option value="">— select 7 playoff teams first —</option></select>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="superBowlCard">
         <h3>Super Bowl</h3>
         <div class="stack">
           <div class="label">Matchup</div>
@@ -310,7 +305,7 @@
     <section class="card summary" id="summary">
       <h3>Your Summary</h3>
       <div id="summaryContent"></div>
-      <div class="footer-note">Tip: Use <strong>Export JSON</strong> to download your picks, <strong>Share Link</strong> to generate a link, or hit <strong>Print</strong> to save as PDF.</div>
+      <div class="footer-note">Tip: Use <strong>Save</strong> to store your picks in this browser or open the <strong>Summary Tab</strong> for a compact overview.</div>
     </section>
   </main>
 
@@ -570,45 +565,9 @@
       }catch(e){ console.warn('Failed to parse saved data', e); return false; }
     }
 
-    function exportJSON(){
-      const blob = new Blob([JSON.stringify(state, null, 2)], {type: 'application/json'});
-      const a = document.createElement('a');
-      const d = new Date();
-      const name = `nfl_predictions_${state.seasonYear}_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}.json`;
-      a.href = URL.createObjectURL(blob);
-      a.download = name; a.click();
-      URL.revokeObjectURL(a.href);
-    }
-
-    function importJSON(file){
-      const reader = new FileReader();
-      reader.onload = () => {
-        try{
-          const data = JSON.parse(reader.result);
-          applyState(data);
-          autosave();
-          alert('Imported!');
-        }catch(e){ alert('Invalid JSON.'); }
-      };
-      reader.readAsText(file);
-    }
-
-    function shareLink(){
-      const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
-      const url = location.origin + location.pathname + '#data=' + payload;
-      navigator.clipboard?.writeText(url).catch(()=>{});
-      alert('Share link copied to clipboard. Anyone with the link can view your picks.');
-    }
-
     function openSummaryTab(){
       const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
       window.open('summary.html#data=' + payload, '_blank');
-    }
-
-    function printSummary(){
-      document.body.classList.add('print-summary');
-      window.print();
-      setTimeout(() => document.body.classList.remove('print-summary'), 1000);
     }
 
     function loadFromHash(){
@@ -711,12 +670,7 @@
 
       // Actions
       qs('#saveBtn').addEventListener('click', () => { autosave(); const ok = !!localStorage.getItem(STORAGE_KEY); alert(ok ? 'Saved to this browser.' : 'Could not save.'); });
-      qs('#exportBtn').addEventListener('click', exportJSON);
-      qs('#importFile').addEventListener('change', e => { const f = e.target.files?.[0]; if(f) importJSON(f); e.target.value = ''; });
-      qs('#shareBtn').addEventListener('click', shareLink);
       qs('#summaryTabBtn').addEventListener('click', openSummaryTab);
-      qs('#summaryBtn').addEventListener('click', printSummary);
-      qs('#printBtn').addEventListener('click', () => window.print());
       qs('#resetBtn').addEventListener('click', () => { if(confirm('Reset everything?')) { resetState(); applyState(state); autosave(); } });
 
       qs('#lockToggle').addEventListener('change', e => setLocked(e.target.value === 'on'));
