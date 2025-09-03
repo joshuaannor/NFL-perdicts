@@ -4,18 +4,41 @@
   <meta charset="utf-8" />
   <title>NFL Predictions Summary</title>
   <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 10px; background: #2e2e2e; color: #e0e0e0; }
-    .summary h4 { margin: 8px 0 4px; font-size: 14px; text-transform: uppercase; }
+    :root {
+      --bg: #2e2e2e;
+      --card: #3a3a3a;
+      --muted: #aaaaaa;
+      --text: #e0e0e0;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    a { color: var(--text); text-decoration: none; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 20px clamp(16px,4vw,40px); }
+    .btn { background: #3a3a3a; color: var(--text); border: 1px solid rgba(255,255,255,0.08); padding: 10px 14px; border-radius: 12px; font-weight: 600; cursor: pointer; }
+    main { padding: 20px clamp(16px,4vw,40px); display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02)); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; padding: 16px; box-shadow: 0 6px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.05); }
+    .card h3 { margin-top: 0; text-transform: uppercase; font-size: 16px; color: #b7c1d6; }
+    .division-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; }
+    ol { margin: 0; padding-left: 20px; }
     .tags { display: flex; flex-wrap: wrap; gap: 6px; }
-    .tag { padding: 4px 8px; border-radius: 999px; border: 1px solid #666; background: #1f1f1f; color: #e0e0e0; }
-    .muted { color: #aaaaaa; }
-    .label { font-size: 12px; color: #aaaaaa; text-transform: uppercase; letter-spacing: .3px; }
+    .tag { padding: 4px 8px; border-radius: 999px; border: 1px solid #666; background: #1f1f1f; }
+    .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .3px; }
     .stack { display: grid; gap: 8px; }
+    .muted { color: var(--muted); }
   </style>
 </head>
 <body>
-  <div class="summary" id="summaryContent"></div>
+  <header>
+    <a id="backLink" class="btn">← Back</a>
+    <h2 id="seasonTitle">Summary</h2>
+  </header>
+  <main>
+    <section class="card" id="divisionsSection"></section>
+    <section class="card" id="summarySection"></section>
+  </main>
   <script>
+    const qs = sel => document.querySelector(sel);
     const state = {};
     function loadFromHash(){
       const m = location.hash.match(/#data=([^&]+)/);
@@ -50,35 +73,39 @@
       if(state.coy) count++;
       return Math.round((count / total) * 100);
     }
-    function summarize(){
-      const divBlock = Object.entries(state.divisions)
-        .sort((a,b)=> a[0].localeCompare(b[0]))
-        .map(([name, teams]) => `<h4>${name}</h4><ol>${teams.map(t=>`<li>${t}</li>`).join('')}</ol>`).join('');
-      const playBlock = conf => `
+    function render(){
+      const divisions = Object.entries(state.divisions)
+        .sort((a,b)=>a[0].localeCompare(b[0]))
+        .map(([name, teams]) => `<div><h4>${name}</h4><ol>${teams.map(t=>`<li>${t}</li>`).join('')}</ol></div>`).join('');
+      qs('#divisionsSection').innerHTML = `<h3>Divisions</h3><div class="division-grid">${divisions}</div>`;
+      const playoff = conf => `
         <h4>${conf} Playoff Teams</h4>
-        <div class="tags">${state.playoffs[conf].length ? state.playoffs[conf].map(t=>`<span class="tag">${t}</span>`).join('') : '<span class="muted">(Select 7)</span>'}</div>`;
+        <div class="tags">${state.playoffs[conf].length ? state.playoffs[conf].map(t=>`<span class=\"tag\">${t}</span>`).join('') : '<span class=\"muted\">(Select 7)</span>'}</div>`;
       const champs = `
         <h4>Champs & Super Bowl</h4>
         <div class="stack">
-          <div><span class="label">AFC Champ</span><div>${state.champs.AFC || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">NFC Champ</span><div>${state.champs.NFC || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Super Bowl</span><div>${state.champs.AFC && state.champs.NFC ? state.champs.AFC + ' vs ' + state.champs.NFC : '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Winner</span><div>${state.superBowlWinner || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">AFC Champ</span><div>${state.champs.AFC || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">NFC Champ</span><div>${state.champs.NFC || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Super Bowl</span><div>${state.champs.AFC && state.champs.NFC ? state.champs.AFC + ' vs ' + state.champs.NFC : '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Winner</span><div>${state.superBowlWinner || '<span class=\"muted\">—</span>'}</div></div>
         </div>`;
       const awards = `
         <h4>Awards</h4>
         <div class="stack">
-          <div><span class="label">NFL MVP</span><div>${state.mvp || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Offensive Player</span><div>${state.opoy || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Defensive Player</span><div>${state.dpoy || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Rookie of the Year</span><div>${state.roty || '<span class="muted">—</span>'}</div></div>
-          <div><span class="label">Coach of the Year</span><div>${state.coy || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">NFL MVP</span><div>${state.mvp || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Offensive Player</span><div>${state.opoy || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Defensive Player</span><div>${state.dpoy || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Rookie of the Year</span><div>${state.roty || '<span class=\"muted\">—</span>'}</div></div>
+          <div><span class="label">Coach of the Year</span><div>${state.coy || '<span class=\"muted\">—</span>'}</div></div>
         </div>`;
       const confidence = `<h4>Confidence Score</h4><div>${calcConfidence()}%</div>`;
-      return confidence + divBlock + playBlock('AFC') + playBlock('NFC') + champs + awards;
+      qs('#summarySection').innerHTML = confidence + playoff('AFC') + playoff('NFC') + champs + awards;
+      qs('#seasonTitle').textContent = `Summary • ${state.seasonYear}`;
+      const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
+      qs('#backLink').href = 'index.html#data=' + payload;
     }
     loadFromHash();
-    document.getElementById('summaryContent').innerHTML = summarize();
+    render();
   </script>
 </body>
 </html>
