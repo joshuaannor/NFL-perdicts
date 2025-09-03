@@ -218,6 +218,7 @@
       <label class="btn" for="importFile" title="Load previously saved JSON">Import JSON</label>
       <input id="importFile" type="file" accept="application/json" hidden />
       <button class="btn" id="shareBtn" title="Create a link with your picks embedded">Share Link</button>
+      <button class="btn" id="summaryTabBtn" title="Open summary in a new tab">Summary Tab</button>
       <button class="btn" id="summaryBtn" title="Print only the summary">Summary PDF</button>
       <button class="btn" id="printBtn">Print</button>
       <button class="btn warn" id="resetBtn">Reset</button>
@@ -599,6 +600,11 @@
       alert('Share link copied to clipboard. Anyone with the link can view your picks.');
     }
 
+    function openSummaryTab(){
+      const payload = encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(state)))));
+      window.open('summary.html#data=' + payload, '_blank');
+    }
+
     function printSummary(){
       document.body.classList.add('print-summary');
       window.print();
@@ -708,6 +714,7 @@
       qs('#exportBtn').addEventListener('click', exportJSON);
       qs('#importFile').addEventListener('change', e => { const f = e.target.files?.[0]; if(f) importJSON(f); e.target.value = ''; });
       qs('#shareBtn').addEventListener('click', shareLink);
+      qs('#summaryTabBtn').addEventListener('click', openSummaryTab);
       qs('#summaryBtn').addEventListener('click', printSummary);
       qs('#printBtn').addEventListener('click', () => window.print());
       qs('#resetBtn').addEventListener('click', () => { if(confirm('Reset everything?')) { resetState(); applyState(state); autosave(); } });
