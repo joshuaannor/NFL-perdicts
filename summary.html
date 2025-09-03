@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>NFL Predictions Summary</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 20px; background: #e8ecf7; color: #333; }
+    .summary h4 { margin: 12px 0 6px; font-size: 16px; text-transform: uppercase; }
+    .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag { padding: 4px 8px; border-radius: 999px; border: 1px solid #999; background: #fff; }
+    .muted { color: #666; }
+    .label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: .3px; }
+    .stack { display: grid; gap: 8px; }
+  </style>
+</head>
+<body>
+  <div class="summary" id="summaryContent"></div>
+  <script>
+    const state = {};
+    function loadFromHash(){
+      const m = location.hash.match(/#data=([^&]+)/);
+      if(!m) return;
+      try{
+        const decoded = JSON.parse(decodeURIComponent(escape(atob(decodeURIComponent(m[1])))));
+        applyState(decoded);
+      }catch(e){ console.warn('Invalid data'); }
+    }
+    function applyState(data){
+      state.seasonYear = Number(data.seasonYear) || new Date().getFullYear();
+      state.divisions = data.divisions || {};
+      state.playoffs = data.playoffs || {AFC: [], NFC: []};
+      state.champs = data.champs || {AFC: "", NFC: ""};
+      state.superBowlWinner = data.superBowlWinner || "";
+      state.mvp = data.mvp || "";
+      state.dpoy = data.dpoy || "";
+      state.opoy = data.opoy || "";
+      state.roty = data.roty || "";
+      state.coy = data.coy || "";
+    }
+    function calcConfidence(){
+      const total = 14 + 2 + 1 + 5;
+      let count = state.playoffs.AFC.length + state.playoffs.NFC.length;
+      if(state.champs.AFC) count++;
+      if(state.champs.NFC) count++;
+      if(state.superBowlWinner) count++;
+      if(state.mvp) count++;
+      if(state.dpoy) count++;
+      if(state.opoy) count++;
+      if(state.roty) count++;
+      if(state.coy) count++;
+      return Math.round((count / total) * 100);
+    }
+    function summarize(){
+      const divBlock = Object.entries(state.divisions)
+        .sort((a,b)=> a[0].localeCompare(b[0]))
+        .map(([name, teams]) => `<h4>${name}</h4><ol>${teams.map(t=>`<li>${t}</li>`).join('')}</ol>`).join('');
+      const playBlock = conf => `
+        <h4>${conf} Playoff Teams</h4>
+        <div class="tags">${state.playoffs[conf].length ? state.playoffs[conf].map(t=>`<span class="tag">${t}</span>`).join('') : '<span class="muted">(Select 7)</span>'}</div>`;
+      const champs = `
+        <h4>Champs & Super Bowl</h4>
+        <div class="stack">
+          <div><span class="label">AFC Champ</span><div>${state.champs.AFC || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">NFC Champ</span><div>${state.champs.NFC || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Super Bowl</span><div>${state.champs.AFC && state.champs.NFC ? state.champs.AFC + ' vs ' + state.champs.NFC : '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Winner</span><div>${state.superBowlWinner || '<span class="muted">—</span>'}</div></div>
+        </div>`;
+      const awards = `
+        <h4>Awards</h4>
+        <div class="stack">
+          <div><span class="label">NFL MVP</span><div>${state.mvp || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Offensive Player</span><div>${state.opoy || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Defensive Player</span><div>${state.dpoy || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Rookie of the Year</span><div>${state.roty || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Coach of the Year</span><div>${state.coy || '<span class="muted">—</span>'}</div></div>
+        </div>`;
+      const confidence = `<h4>Confidence Score</h4><div>${calcConfidence()}%</div>`;
+      return confidence + divBlock + playBlock('AFC') + playBlock('NFC') + champs + awards;
+    }
+    loadFromHash();
+    document.getElementById('summaryContent').innerHTML = summarize();
+  </script>
+</body>
+</html>
