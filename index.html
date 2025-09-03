@@ -6,15 +6,15 @@
   <title>NFL Season Predictions — Single‑File App</title>
   <style>
     :root {
-      --bg: #e0e0e0;
-      --card: #e0e0e0;
+      --bg: #e8ecf7;
+      --card: #e8ecf7;
       --muted: #666666;
       --text: #333333;
-      --accent: #b0b0b0;
-      --accent-2: #9e9e9e;
+      --accent: #5ab0f5;
+      --accent-2: #4e81c9;
       --danger: #a0a0a0;
       --warning: #bbbbbb;
-      --ring: rgba(190,190,190,0.6);
+      --ring: rgba(90,176,245,0.6);
       --shadow-light: #ffffff;
       --shadow-dark: #bebebe;
     }
@@ -88,6 +88,10 @@
     .chip { padding: 8px 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.1); background: #10172a; cursor: pointer; color: var(--text); }
     .chip.active { background: linear-gradient(180deg, rgba(90,176,245,0.18), rgba(90,176,245,0.08)); border-color: var(--ring); box-shadow: 0 0 0 3px var(--ring); color: #fff; }
     .count { font-size: 12px; color: var(--muted); }
+
+    .bracket { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .bracket li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: #11172a; border: 1px solid rgba(255,255,255,0.08); }
+    .bracket .seed { width: 22px; height: 22px; border-radius: 6px; background: #101524; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #9db5ff; }
 
     select, input[type="text"], input[type="number"], input[type="search"] {
       width: 100%; padding: 10px 12px; border-radius: 10px; background: #0f1423; color: var(--text);
@@ -188,6 +192,7 @@
       .summary .tag { border: 1px solid #999; background: #fff; color: #111; }
       .division-list .team { background: #fff; border: 1px solid #ccc; color: #111; }
       .rank-badge { background: #eee; color: #000; border-color: #bbb; }
+      body.print-summary main > :not(#summary) { display: none !important; }
     }
   </style>
 </head>
@@ -213,6 +218,7 @@
       <label class="btn" for="importFile" title="Load previously saved JSON">Import JSON</label>
       <input id="importFile" type="file" accept="application/json" hidden />
       <button class="btn" id="shareBtn" title="Create a link with your picks embedded">Share Link</button>
+      <button class="btn" id="summaryBtn" title="Print only the summary">Summary PDF</button>
       <button class="btn" id="printBtn">Print</button>
       <button class="btn warn" id="resetBtn">Reset</button>
     </div>
@@ -275,6 +281,28 @@
         <label class="label" for="mvpInput">NFL MVP</label>
         <input id="mvpInput" type="search" list="mvpList" placeholder="Start typing a player…" />
         <datalist id="mvpList"></datalist>
+        <label class="label" for="opoyInput">Offensive Player of the Year</label>
+        <input id="opoyInput" type="text" placeholder="e.g., Justin Jefferson" />
+        <label class="label" for="dpoyInput">Defensive Player of the Year</label>
+        <input id="dpoyInput" type="text" placeholder="e.g., Micah Parsons" />
+        <label class="label" for="rotyInput">Rookie of the Year</label>
+        <input id="rotyInput" type="text" placeholder="e.g., C.J. Stroud" />
+        <label class="label" for="coyInput">Coach of the Year</label>
+        <input id="coyInput" type="text" placeholder="e.g., Dan Campbell" />
+      </div>
+    </section>
+
+    <section class="card" id="bracketCard">
+      <h3>Playoff Seeding</h3>
+      <div class="grid cols-2">
+        <div>
+          <h4>AFC</h4>
+          <ol class="bracket" id="afcBracket"></ol>
+        </div>
+        <div>
+          <h4>NFC</h4>
+          <ol class="bracket" id="nfcBracket"></ol>
+        </div>
       </div>
     </section>
 
@@ -308,7 +336,11 @@
       playoffs: { AFC: [], NFC: [] },
       champs: { AFC: "", NFC: "" },
       superBowlWinner: "",
-      mvp: ""
+      mvp: "",
+      dpoy: "",
+      opoy: "",
+      roty: "",
+      coy: "",
     };
 
     // --- Helpers ---
@@ -324,6 +356,10 @@
       state.champs = { AFC: "", NFC: "" };
       state.superBowlWinner = "";
       state.mvp = "";
+      state.dpoy = "";
+      state.opoy = "";
+      state.roty = "";
+      state.coy = "";
     }
 
     // --- Render Division Cards with Drag & Drop ---
@@ -391,6 +427,17 @@
       });
       updatePlayoffCounts();
       refreshChampOptions();
+      renderBracket(conf);
+    }
+
+    function renderBracket(conf){
+      const el = qs(conf === 'AFC' ? '#afcBracket' : '#nfcBracket');
+      el.innerHTML = '';
+      state.playoffs[conf].forEach((team, idx) => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="seed">${idx+1}</span><span>${team}</span>`;
+        el.appendChild(li);
+      });
     }
 
     function togglePlayoffTeam(conf, team){
@@ -452,6 +499,20 @@
     }
 
     // --- Summary ---
+    function calcConfidence(){
+      const total = 14 + 2 + 1 + 5;
+      let count = state.playoffs.AFC.length + state.playoffs.NFC.length;
+      if(state.champs.AFC) count++;
+      if(state.champs.NFC) count++;
+      if(state.superBowlWinner) count++;
+      if(state.mvp) count++;
+      if(state.dpoy) count++;
+      if(state.opoy) count++;
+      if(state.roty) count++;
+      if(state.coy) count++;
+      return Math.round((count / total) * 100);
+    }
+
     function summarize(){
       const divBlock = Object.entries(state.divisions)
         .sort((a,b)=> a[0].localeCompare(b[0]))
@@ -477,9 +538,15 @@
         <h4>Awards</h4>
         <div class="stack">
           <div><span class="label">NFL MVP</span><div>${state.mvp || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Offensive Player</span><div>${state.opoy || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Defensive Player</span><div>${state.dpoy || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Rookie of the Year</span><div>${state.roty || '<span class="muted">—</span>'}</div></div>
+          <div><span class="label">Coach of the Year</span><div>${state.coy || '<span class="muted">—</span>'}</div></div>
         </div>`;
 
-      return divBlock + playBlock('AFC') + playBlock('NFC') + champs + awards;
+      const confidence = `<h4>Confidence Score</h4><div>${calcConfidence()}%</div>`;
+
+      return confidence + divBlock + playBlock('AFC') + playBlock('NFC') + champs + awards;
     }
 
     function updateSummary(){
@@ -532,6 +599,12 @@
       alert('Share link copied to clipboard. Anyone with the link can view your picks.');
     }
 
+    function printSummary(){
+      document.body.classList.add('print-summary');
+      window.print();
+      setTimeout(() => document.body.classList.remove('print-summary'), 1000);
+    }
+
     function loadFromHash(){
       const hash = location.hash;
       const m = hash.match(/#data=([^&]+)/);
@@ -563,6 +636,10 @@
       };
       state.superBowlWinner = [state.champs.AFC, state.champs.NFC].includes(data.superBowlWinner) ? data.superBowlWinner : "";
       state.mvp = data.mvp || '';
+      state.dpoy = data.dpoy || '';
+      state.opoy = data.opoy || '';
+      state.roty = data.roty || '';
+      state.coy = data.coy || '';
 
       // Re-render UI
       qs('#seasonYear').value = state.seasonYear;
@@ -576,6 +653,12 @@
 
       renderPlayoffChips('AFC');
       renderPlayoffChips('NFC');
+
+      qs('#mvpInput').value = state.mvp;
+      qs('#dpoyInput').value = state.dpoy;
+      qs('#opoyInput').value = state.opoy;
+      qs('#rotyInput').value = state.roty;
+      qs('#coyInput').value = state.coy;
 
       refreshChampOptions();
       updateSBMatchup();
@@ -615,12 +698,17 @@
       qs('#nfcChamp').addEventListener('change', e => { state.champs.NFC = e.target.value; updateSBMatchup(); updateSummary(); autosave(); });
       qs('#sbWinner').addEventListener('change', e => { state.superBowlWinner = e.target.value; updateSummary(); autosave(); });
       qs('#mvpInput').addEventListener('input', e => { state.mvp = e.target.value; updateSummary(); autosave(); });
+      qs('#opoyInput').addEventListener('input', e => { state.opoy = e.target.value; updateSummary(); autosave(); });
+      qs('#dpoyInput').addEventListener('input', e => { state.dpoy = e.target.value; updateSummary(); autosave(); });
+      qs('#rotyInput').addEventListener('input', e => { state.roty = e.target.value; updateSummary(); autosave(); });
+      qs('#coyInput').addEventListener('input', e => { state.coy = e.target.value; updateSummary(); autosave(); });
 
       // Actions
       qs('#saveBtn').addEventListener('click', () => { autosave(); const ok = !!localStorage.getItem(STORAGE_KEY); alert(ok ? 'Saved to this browser.' : 'Could not save.'); });
       qs('#exportBtn').addEventListener('click', exportJSON);
       qs('#importFile').addEventListener('change', e => { const f = e.target.files?.[0]; if(f) importJSON(f); e.target.value = ''; });
       qs('#shareBtn').addEventListener('click', shareLink);
+      qs('#summaryBtn').addEventListener('click', printSummary);
       qs('#printBtn').addEventListener('click', () => window.print());
       qs('#resetBtn').addEventListener('click', () => { if(confirm('Reset everything?')) { resetState(); applyState(state); autosave(); } });
 
