@@ -91,6 +91,26 @@
     .bracket { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
     .bracket li { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 8px; background: #1f1f1f; border: 1px solid rgba(255,255,255,0.08); }
     .bracket .seed { width: 22px; height: 22px; border-radius: 6px; background: #2f2f2f; display: grid; place-items: center; font-size: 12px; font-weight: 700; color: #9db5ff; }
+    .bracket .spacer { flex: 1; }
+    .btn.sm {
+      padding: 6px 10px;
+      font-size: 12px;
+      border-radius: 10px;
+      background: transparent;
+      box-shadow: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      color: var(--muted);
+    }
+    .btn.sm:hover {
+      transform: none;
+      box-shadow: none;
+      color: var(--text);
+      border-color: rgba(90,176,245,0.35);
+    }
+    .btn.sm:active {
+      box-shadow: none;
+      transform: translateY(0);
+    }
 
     select, input[type="text"], input[type="number"], input[type="search"] {
       width: 100%; padding: 10px 12px; border-radius: 10px; background: #1a1a1a; color: var(--text);
@@ -238,6 +258,20 @@
       </div>
     </section>
 
+    <section class="card" id="bracketCard">
+      <h3>Playoff Seeding</h3>
+      <div class="grid cols-2">
+        <div>
+          <h4>AFC</h4>
+          <ol class="bracket" id="afcBracket"></ol>
+        </div>
+        <div>
+          <h4>NFC</h4>
+          <ol class="bracket" id="nfcBracket"></ol>
+        </div>
+      </div>
+    </section>
+
     <section class="grid cols-3">
       <div class="card">
         <h3>Conference Champs</h3>
@@ -277,19 +311,7 @@
       </div>
     </section>
 
-    <section class="card" id="bracketCard">
-      <h3>Playoff Seeding</h3>
-      <div class="grid cols-2">
-        <div>
-          <h4>AFC</h4>
-          <ol class="bracket" id="afcBracket"></ol>
-        </div>
-        <div>
-          <h4>NFC</h4>
-          <ol class="bracket" id="nfcBracket"></ol>
-        </div>
-      </div>
-    </section>
+    
 
   </main>
 
@@ -412,11 +434,46 @@
     function renderBracket(conf){
       const el = qs(conf === 'AFC' ? '#afcBracket' : '#nfcBracket');
       el.innerHTML = '';
-      state.playoffs[conf].forEach((team, idx) => {
+      const list = state.playoffs[conf];
+      list.forEach((team, idx) => {
         const li = document.createElement('li');
-        li.innerHTML = `<span class="seed">${idx+1}</span><span>${team}</span>`;
+        const seed = document.createElement('span');
+        seed.className = 'seed';
+        seed.textContent = String(idx + 1);
+        const name = document.createElement('span');
+        name.textContent = team;
+        const spacer = document.createElement('span');
+        spacer.className = 'spacer';
+        const upBtn = document.createElement('button');
+        upBtn.className = 'btn sm';
+        upBtn.type = 'button';
+        upBtn.textContent = 'Upper';
+        upBtn.disabled = idx === 0;
+        upBtn.addEventListener('click', () => moveSeed(conf, idx, -1));
+        const downBtn = document.createElement('button');
+        downBtn.className = 'btn sm';
+        downBtn.type = 'button';
+        downBtn.textContent = 'Lower';
+        downBtn.disabled = idx === list.length - 1;
+        downBtn.addEventListener('click', () => moveSeed(conf, idx, +1));
+        li.appendChild(seed);
+        li.appendChild(name);
+        li.appendChild(spacer);
+        li.appendChild(upBtn);
+        li.appendChild(downBtn);
         el.appendChild(li);
       });
+    }
+
+    function moveSeed(conf, index, delta){
+      const list = state.playoffs[conf];
+      const target = index + delta;
+      if(target < 0 || target >= list.length) return;
+      const tmp = list[index];
+      list[index] = list[target];
+      list[target] = tmp;
+      renderBracket(conf);
+      autosave();
     }
 
     function togglePlayoffTeam(conf, team){
